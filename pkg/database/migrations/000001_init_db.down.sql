@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS booking_items;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS seats;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS users;
+
+DROP TYPE IF EXISTS bookings_status;
+DROP TYPE IF EXISTS seats_status;

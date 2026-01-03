@@ -2,11 +2,14 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/codepnw/stdlib-ticket-system/pkg/utils"
 	"github.com/joho/godotenv"
 )
+
+const ContextTimeout = time.Second * 10
 
 type EnvConfig struct {
 	DB DBConfig `envPrefix:"DB_"`
@@ -25,13 +28,13 @@ func LoadConfig(path string) (*EnvConfig, error) {
 	if err := godotenv.Load(path); err != nil {
 		return nil, fmt.Errorf("load env failed: %w", err)
 	}
-	
+
 	cfg := new(EnvConfig)
 	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("parse env failed: %w", err)
 	}
-	
-	if err := utils.Struct(cfg); err != nil {
+
+	if err := utils.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("validate env failed: %w", err)
 	}
 	return cfg, nil

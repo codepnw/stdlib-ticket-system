@@ -12,3 +12,4 @@ go.work
 
 .env.example
 *.txt
+httpdocs

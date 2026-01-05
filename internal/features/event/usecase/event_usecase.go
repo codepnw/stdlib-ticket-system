@@ -15,6 +15,9 @@ import (
 
 type EventUsecase interface {
 	CreateEvent(ctx context.Context, req event.CreateEventReq) error
+	GetEventByID(ctx context.Context, eventID int64) (event.Event, error)
+	GetAllEvents(ctx context.Context) ([]event.Event, error)
+	GetSeatsByEventID(ctx context.Context, eventID int64) ([]seat.Seat, error)
 }
 
 type eventUsecase struct {
@@ -34,7 +37,7 @@ func NewEventUsecase(tx database.TxManager, eventRepo eventrepo.EventRepository,
 func (u *eventUsecase) CreateEvent(ctx context.Context, req event.CreateEventReq) error {
 	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
 	defer cancel()
-	
+
 	err := u.tx.WithTx(ctx, func(tx *sql.Tx) error {
 		eventID, err := u.eventRepo.CreateEventTx(ctx, tx, event.Event{
 			Name:      req.Name,
@@ -59,7 +62,7 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, req event.CreateEventReq
 				seats = append(seats, s)
 			}
 		}
-		
+
 		if len(seats) > 0 {
 			if err := u.seatRepo.CreateSeatBatchTx(ctx, tx, seats); err != nil {
 				return err
@@ -68,4 +71,25 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, req event.CreateEventReq
 		return nil
 	})
 	return err
+}
+
+func (u *eventUsecase) GetAllEvents(ctx context.Context) ([]event.Event, error) {
+	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
+	defer cancel()
+
+	return u.eventRepo.GetAllEvents(ctx)
+}
+
+func (u *eventUsecase) GetEventByID(ctx context.Context, eventID int64) (event.Event, error) {
+	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
+	defer cancel()
+
+	return u.eventRepo.GetEventByID(ctx, eventID)
+}
+
+func (u *eventUsecase) GetSeatsByEventID(ctx context.Context, eventID int64) ([]seat.Seat, error) {
+	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
+	defer cancel()
+
+	return u.seatRepo.GetSeatsByEventID(ctx, eventID)
 }

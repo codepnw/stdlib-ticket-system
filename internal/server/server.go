@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	eventhandler "github.com/codepnw/stdlib-ticket-system/internal/features/event/handler"
@@ -20,6 +21,8 @@ type ServerConfig struct {
 
 func Run(cfg *ServerConfig) error {
 	cfg.eventRoutes()
+	
+	log.Println("server running...")
 
 	if err := http.ListenAndServe(cfg.Addr, cfg.Mux); err != nil {
 		return err
@@ -34,4 +37,7 @@ func (cfg ServerConfig) eventRoutes() {
 	handler := eventhandler.NewEventHandler(uc)
 
 	cfg.Mux.HandleFunc("POST /events", handler.CreateEvent)
+	cfg.Mux.HandleFunc("GET /events", handler.GetAllEvents)
+	cfg.Mux.HandleFunc("GET /events/{event_id}", handler.GetEventByID)
+	cfg.Mux.HandleFunc("GET /events/{event_id}/seats", handler.GetSeatsByEventID)
 }

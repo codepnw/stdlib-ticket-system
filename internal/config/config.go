@@ -9,10 +9,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const ContextTimeout = time.Second * 10
+const (
+	ContextTimeout       = time.Second * 10
+	AccessTokenDuration  = time.Hour * 1
+	RefreshTokenDuration = time.Hour * 24 * 7
+)
 
 type EnvConfig struct {
-	DB DBConfig `envPrefix:"DB_"`
+	DB  DBConfig  `envPrefix:"DB_"`
+	JWT JWTConfig `envPrefix:"JWT_"`
 }
 
 type DBConfig struct {
@@ -22,6 +27,11 @@ type DBConfig struct {
 	DBHost    string `env:"HOST" envDefault:"localhost"`
 	DBPort    int    `env:"PORT" envDefault:"5432"`
 	DBSSLMode string `env:"SSL_MODE" envDefault:"disable"`
+}
+
+type JWTConfig struct {
+	SecretKey  string `env:"SECRET_KEY" validate:"required"`
+	RefreshKey string `env:"REFRESH_KEY" validate:"required"`
 }
 
 func LoadConfig(path string) (*EnvConfig, error) {

@@ -9,26 +9,32 @@ import (
 	eventrepo "github.com/codepnw/stdlib-ticket-system/internal/features/event/repo"
 	eventusecase "github.com/codepnw/stdlib-ticket-system/internal/features/event/usecase"
 	seatrepo "github.com/codepnw/stdlib-ticket-system/internal/features/seat/repo"
+	userhandler "github.com/codepnw/stdlib-ticket-system/internal/features/user/handler"
+	userrepo "github.com/codepnw/stdlib-ticket-system/internal/features/user/repo"
+	userusecase "github.com/codepnw/stdlib-ticket-system/internal/features/user/usecase"
 	"github.com/codepnw/stdlib-ticket-system/pkg/database"
+	jwttoken "github.com/codepnw/stdlib-ticket-system/pkg/jwt"
 )
 
 type ServerConfig struct {
-	DB   *sql.DB
-	Mux  *http.ServeMux
-	Tx   database.TxManager
-	Addr string
+	DB    *sql.DB
+	Mux   *http.ServeMux
+	Tx    database.TxManager
+	Addr  string
+	Token jwttoken.JWTToken
 }
 
 func Run(cfg *ServerConfig) error {
 	cfg.eventRoutes()
-	
+	cfg.userRoutes()
+
 	log.Println("server running...")
 
 	if err := http.ListenAndServe(cfg.Addr, cfg.Mux); err != nil {
 		return err
 	}
 	return nil
-}        
+}
 
 func (cfg ServerConfig) eventRoutes() {
 	seatRepo := seatrepo.NewSeatRepository(cfg.DB)
@@ -40,4 +46,13 @@ func (cfg ServerConfig) eventRoutes() {
 	cfg.Mux.HandleFunc("GET /events", handler.GetAllEvents)
 	cfg.Mux.HandleFunc("GET /events/{event_id}", handler.GetEventByID)
 	cfg.Mux.HandleFunc("GET /events/{event_id}/seats", handler.GetSeatsByEventID)
+}
+
+func (cfg ServerConfig) userRoutes() {
+	repo := userrepo.NewUserRepository(cfg.DB)
+	uc := userusecase.NewUserUsecase(cfg.Tx, cfg.Token, repo)
+	handler := userhandler.NewUserHandler(uc)
+
+	cfg.Mux.HandleFunc("POST /register", handler.Register)
+	cfg.Mux.HandleFunc("POST /login", handler.Login)
 }

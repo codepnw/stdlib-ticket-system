@@ -1,0 +1,3 @@
+ALTER TABLE users DROP CONSTRAINT unique_username;
+
+DROP TABLE IF EXISTS auth;

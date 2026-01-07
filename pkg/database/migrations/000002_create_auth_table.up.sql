@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS auth (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    refresh_token TEXT NOT NULL,
+    revoked BOOL DEFAULT FALSE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE users 
+ADD CONSTRAINT unique_username UNIQUE (username);

@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq"
 )
 
+//go:generate mockgen -source=seat_repo.go -destination=seat_repo_mock.go -package=seatrepo
 type SeatRepository interface {
 	GetSeatsByEventID(ctx context.Context, eventID int64) ([]seat.Seat, error)
 

@@ -3,11 +3,10 @@ package bookingusecase
 import (
 	"context"
 	"database/sql"
-	"errors"
-	"fmt"
 	"log"
 
 	"github.com/codepnw/stdlib-ticket-system/internal/config"
+	"github.com/codepnw/stdlib-ticket-system/internal/errs"
 	"github.com/codepnw/stdlib-ticket-system/internal/features/booking"
 	bookingrepo "github.com/codepnw/stdlib-ticket-system/internal/features/booking/repo"
 	"github.com/codepnw/stdlib-ticket-system/internal/features/seat"
@@ -15,7 +14,7 @@ import (
 	"github.com/codepnw/stdlib-ticket-system/pkg/database"
 )
 
-type BookingUsecase interface{
+type BookingUsecase interface {
 	CreateBooking(ctx context.Context, eventID int64, seatIDs []int64) error
 }
 
@@ -46,13 +45,13 @@ func (u *bookingUsecase) CreateBooking(ctx context.Context, eventID int64, seatI
 		}
 		// Validate Seats Len
 		if len(seats) != len(seatIDs) {
-			return errors.New("some seats not available")
+			return errs.ErrSomeSeatNotAvailable
 		}
 
 		var totalAmount float64
 		for _, s := range seats {
 			if s.Status != seat.StatusAvailable {
-				return fmt.Errorf("seat id %d not available", s.ID)
+				return errs.ErrSomeSeatNotAvailable
 			}
 			totalAmount += s.Price
 		}
@@ -62,7 +61,7 @@ func (u *bookingUsecase) CreateBooking(ctx context.Context, eventID int64, seatI
 			log.Printf("update seats failed: %v", err)
 			return err
 		}
-		
+
 		// Create Booking
 		bookingID, err := u.bookRepo.CreateBookingTx(ctx, tx, booking.Booking{
 			UserID:      1, // TODO: Get From Context Later
@@ -74,7 +73,7 @@ func (u *bookingUsecase) CreateBooking(ctx context.Context, eventID int64, seatI
 			log.Printf("create booking failed: %v", err)
 			return err
 		}
-		
+
 		// Create Booking Items
 		if err := u.bookRepo.CreateBookingItemsTx(ctx, tx, bookingID, seatIDs); err != nil {
 			log.Printf("create booking items failed: %v", err)

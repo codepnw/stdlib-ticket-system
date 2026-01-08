@@ -2,6 +2,9 @@ include .env.example
 
 run:
 	@go run cmd/api/main.go
+	
+test:
+	@go test ./internal/features/booking/usecase -cover
 
 docker-up:
 	@docker compose --env-file=.env.example up -d

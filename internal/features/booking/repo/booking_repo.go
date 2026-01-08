@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 )
 
+//go:generate mockgen -source=booking_repo.go -destination=booking_repo_mock.go -package=bookingrepo
 type BookingRepository interface {
 	CreateBookingTx(ctx context.Context, tx *sql.Tx, input booking.Booking) (string, error)
 	CreateBookingItemsTx(ctx context.Context, tx *sql.Tx, bookingID string, seatIDs []int64) error

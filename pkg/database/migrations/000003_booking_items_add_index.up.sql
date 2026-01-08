@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX idx_unique_seat ON booking_items(seat_id);

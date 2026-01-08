@@ -1,0 +1,2 @@
+ALTER TABLE bookings
+ALter COLUMN id DROP DEFAULT;

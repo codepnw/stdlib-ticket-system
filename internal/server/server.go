@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	bookinghandler "github.com/codepnw/stdlib-ticket-system/internal/features/booking/handler"
+	bookingrepo "github.com/codepnw/stdlib-ticket-system/internal/features/booking/repo"
+	bookingusecase "github.com/codepnw/stdlib-ticket-system/internal/features/booking/usecase"
 	eventhandler "github.com/codepnw/stdlib-ticket-system/internal/features/event/handler"
 	eventrepo "github.com/codepnw/stdlib-ticket-system/internal/features/event/repo"
 	eventusecase "github.com/codepnw/stdlib-ticket-system/internal/features/event/usecase"
@@ -27,6 +30,7 @@ type ServerConfig struct {
 func Run(cfg *ServerConfig) error {
 	cfg.eventRoutes()
 	cfg.userRoutes()
+	cfg.bookingRoutes()
 
 	log.Println("server running...")
 
@@ -55,4 +59,13 @@ func (cfg ServerConfig) userRoutes() {
 
 	cfg.Mux.HandleFunc("POST /register", handler.Register)
 	cfg.Mux.HandleFunc("POST /login", handler.Login)
+}
+
+func (cfg ServerConfig) bookingRoutes() {
+	bookRepo := bookingrepo.NewBookingRepository(cfg.DB)
+	seatRepo := seatrepo.NewSeatRepository(cfg.DB)
+	uc := bookingusecase.NewBookingUsecase(cfg.Tx, bookRepo, seatRepo)
+	handler := bookinghandler.NewBookingHandler(uc)
+
+	cfg.Mux.HandleFunc("POST /bookings", handler.CreateBooking)
 }

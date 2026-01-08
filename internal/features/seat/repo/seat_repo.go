@@ -6,12 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/codepnw/stdlib-ticket-system/internal/errs"
 	"github.com/codepnw/stdlib-ticket-system/internal/features/seat"
+	"github.com/lib/pq"
 )
 
 type SeatRepository interface {
-	CreateSeatBatchTx(ctx context.Context, tx *sql.Tx, seats []seat.Seat) error
 	GetSeatsByEventID(ctx context.Context, eventID int64) ([]seat.Seat, error)
+
+	// Transaction
+	CreateSeatBatchTx(ctx context.Context, tx *sql.Tx, seats []seat.Seat) error
+	GetSeatsForUpdateTx(ctx context.Context, tx *sql.Tx, seatIDs []int64) ([]seat.Seat, error)
+	UpdateSeatsStatusTx(ctx context.Context, tx *sql.Tx, seatIDs []int64, status string) error
 }
 
 type seatRepository struct {
@@ -79,4 +85,48 @@ func (r *seatRepository) GetSeatsByEventID(ctx context.Context, eventID int64) (
 		return nil, err
 	}
 	return seats, nil
+}
+
+func (r *seatRepository) GetSeatsForUpdateTx(ctx context.Context, tx *sql.Tx, seatIDs []int64) ([]seat.Seat, error) {
+	query := `SELECT id, status, price FROM seats WHERE id = ANY($1) FOR UPDATE`
+	rows, err := tx.QueryContext(ctx, query, pq.Array(seatIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	var seats []seat.Seat
+	for rows.Next() {
+		var s seat.Seat
+		if err := rows.Scan(
+			&s.ID,
+			&s.Status,
+			&s.Price,
+		); err != nil {
+			return nil, err
+		}
+		seats = append(seats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return seats, nil
+}
+
+func (r *seatRepository) UpdateSeatsStatusTx(ctx context.Context, tx *sql.Tx, seatIDs []int64, status string) error {
+	query := `UPDATE seats SET status = $1 WHERE id = ANY($2)`
+	res, err := tx.ExecContext(ctx, query, status, pq.Array(seatIDs))
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errs.ErrSeatNotFound
+	}
+	return nil
 }

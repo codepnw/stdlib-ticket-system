@@ -1,11 +1,11 @@
 package seat
 
-type seatStatus string
+type SeatStatus string
 
 const (
-	StatusAvailable seatStatus = "AVAILABLE"
-	StatusReserved  seatStatus = "RESERVED"
-	StatusSold      seatStatus = "SOLD"
+	StatusAvailable SeatStatus = "AVAILABLE"
+	StatusReserved  SeatStatus = "RESERVED"
+	StatusSold      SeatStatus = "SOLD"
 )
 
 type Seat struct {
@@ -13,6 +13,6 @@ type Seat struct {
 	EventID    int64      `json:"event_id" db:"event_id"`
 	SeatNumber string     `json:"seat_number" db:"seat_number"`
 	Price      float64    `json:"price" db:"price"`
-	Status     seatStatus `json:"status" db:"status"`
+	Status     SeatStatus `json:"status" db:"status"`
 	Version    int        `json:"version" db:"version"`
 }

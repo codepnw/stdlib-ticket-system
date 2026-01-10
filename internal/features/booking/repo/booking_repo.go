@@ -10,6 +10,9 @@ import (
 
 //go:generate mockgen -source=booking_repo.go -destination=booking_repo_mock.go -package=bookingrepo
 type BookingRepository interface {
+	GetHistory(ctx context.Context, userID int64) ([]booking.BookingHistoryResponse, error)
+	
+	// Transaction
 	CreateBookingTx(ctx context.Context, tx *sql.Tx, input booking.Booking) (string, error)
 	CreateBookingItemsTx(ctx context.Context, tx *sql.Tx, bookingID string, seatIDs []int64) error
 }
@@ -53,4 +56,52 @@ func (r *bookingRepository) CreateBookingItemsTx(ctx context.Context, tx *sql.Tx
 		return err
 	}
 	return nil
+}
+
+func (r *bookingRepository) GetHistory(ctx context.Context, userID int64) ([]booking.BookingHistoryResponse, error) {
+	query := `
+		SELECT
+			b.id AS booking_id,
+			e.name AS event_name,
+			e.event_date,
+			b.total_amount,
+			b.status,
+			b.created_at,
+			STRING_AGG(s.seat_number, ', ') AS seat_numbers
+		FROM bookings b
+		JOIN events e ON b.event_id = e.id
+		JOIN booking_items bi ON bi.booking_id = b.id 
+		JOIN seats s ON bi.seat_id = s.id
+		WHERE b.user_id = $1
+		GROUP BY b.id, e.id
+		ORDER BY b.created_at DESC
+	`
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var history []booking.BookingHistoryResponse
+	
+	for rows.Next() {
+		var h booking.BookingHistoryResponse
+		if err := rows.Scan(
+			&h.ID,
+			&h.EventName,
+			&h.EventDate,
+			&h.TotalAmount,
+			&h.Status,
+			&h.CreatedAt,
+			&h.SeatNumbers,
+		); err != nil {
+			return nil, err
+		}
+		history = append(history, h)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return history, nil
 }

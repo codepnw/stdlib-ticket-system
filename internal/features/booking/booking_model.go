@@ -25,3 +25,13 @@ type BookingItem struct {
 	BookingID string `db:"booking_id"`
 	SeatID    int64  `db:"seat_id"`
 }
+
+type BookingHistoryResponse struct {
+	ID          string    `json:"id" db:"booking_id"`
+	EventName   string    `json:"event_name" db:"event_name"`
+	EventDate   time.Time `json:"event_date" db:"event_date"`
+	TotalAmount float64   `json:"total_amount" db:"total_amount"`
+	Status      string    `json:"status" db:"status"`
+	SeatNumbers string    `json:"seat_numbers" db:"seat_numbers"` // STRING_AGG()
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+}

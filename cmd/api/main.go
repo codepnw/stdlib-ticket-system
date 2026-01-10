@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/codepnw/stdlib-ticket-system/internal/config"
 	"github.com/codepnw/stdlib-ticket-system/internal/server"
@@ -13,6 +14,9 @@ import (
 const envPath = ".env.example"
 
 func main() {
+	// Load Time Location
+	location, _ := time.LoadLocation("Asia/Bangkok")
+
 	// Load Config
 	cfg, err := config.LoadConfig(envPath)
 	if err != nil {
@@ -31,8 +35,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	// Init JWT 
+
+	// Init JWT
 	token, err := jwttoken.NewJWT(cfg.JWT.SecretKey, cfg.JWT.RefreshKey)
 	if err != nil {
 		log.Fatal(err)
@@ -42,11 +46,12 @@ func main() {
 	mux := http.NewServeMux()
 
 	serverCfg := &server.ServerConfig{
-		DB:    db,
-		Tx:    tx,
-		Mux:   mux,
-		Addr:  ":8080",
-		Token: token,
+		Location: location,
+		DB:       db,
+		Tx:       tx,
+		Mux:      mux,
+		Addr:     ":8080",
+		Token:    token,
 	}
 	// Run Server
 	if err := server.Run(serverCfg); err != nil {

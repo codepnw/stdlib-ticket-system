@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/codepnw/stdlib-ticket-system/internal/config"
 	"github.com/codepnw/stdlib-ticket-system/internal/errs"
@@ -16,16 +17,19 @@ import (
 
 type BookingUsecase interface {
 	CreateBooking(ctx context.Context, eventID int64, seatIDs []int64) error
+	GetBookingHistory(ctx context.Context) ([]displayBookingHistory, error)
 }
 
 type bookingUsecase struct {
+	location *time.Location
 	tx       database.TxManager
 	bookRepo bookingrepo.BookingRepository
 	seatRepo seatrepo.SeatRepository
 }
 
-func NewBookingUsecase(tx database.TxManager, bookRepo bookingrepo.BookingRepository, seatRepo seatrepo.SeatRepository) BookingUsecase {
+func NewBookingUsecase(location *time.Location, tx database.TxManager, bookRepo bookingrepo.BookingRepository, seatRepo seatrepo.SeatRepository) BookingUsecase {
 	return &bookingUsecase{
+		location: location,
 		tx:       tx,
 		bookRepo: bookRepo,
 		seatRepo: seatRepo,
@@ -81,4 +85,44 @@ func (u *bookingUsecase) CreateBooking(ctx context.Context, eventID int64, seatI
 		}
 		return nil
 	})
+}
+
+type displayBookingHistory struct {
+	ID          string  `json:"id" `
+	EventName   string  `json:"event_name" `
+	TotalAmount float64 `json:"total_amount" `
+	Status      string  `json:"status" `
+	SeatNumbers string  `json:"seat_numbers"`
+	EventDate   string  `json:"event_date" `
+	CreatedAt   string  `json:"created_at" `
+}
+
+func (u *bookingUsecase) GetBookingHistory(ctx context.Context) ([]displayBookingHistory, error) {
+	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
+	defer cancel()
+
+	// TODO: Get UserID From Context Later
+	userID := int64(1)
+
+	history, err := u.bookRepo.GetHistory(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []displayBookingHistory
+	timeFormat := time.DateTime
+
+	for _, h := range history {
+		result = append(result, displayBookingHistory{
+			ID:          h.ID,
+			EventName:   h.EventName,
+			TotalAmount: h.TotalAmount,
+			Status:      h.Status,
+			SeatNumbers: h.SeatNumbers,
+			// Format time.Time -> Asia/Bangkok "2006-01-02 15:04:05"
+			EventDate: h.EventDate.In(u.location).Format(timeFormat),
+			CreatedAt: h.CreatedAt.In(u.location).Format(timeFormat),
+		})
+	}
+	return result, nil
 }

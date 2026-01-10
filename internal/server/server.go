@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"time"
 
 	bookinghandler "github.com/codepnw/stdlib-ticket-system/internal/features/booking/handler"
 	bookingrepo "github.com/codepnw/stdlib-ticket-system/internal/features/booking/repo"
@@ -20,11 +21,12 @@ import (
 )
 
 type ServerConfig struct {
-	DB    *sql.DB
-	Mux   *http.ServeMux
-	Tx    database.TxManager
-	Addr  string
-	Token jwttoken.JWTToken
+	Location *time.Location
+	DB       *sql.DB
+	Mux      *http.ServeMux
+	Tx       database.TxManager
+	Addr     string
+	Token    jwttoken.JWTToken
 }
 
 func Run(cfg *ServerConfig) error {
@@ -64,8 +66,9 @@ func (cfg ServerConfig) userRoutes() {
 func (cfg ServerConfig) bookingRoutes() {
 	bookRepo := bookingrepo.NewBookingRepository(cfg.DB)
 	seatRepo := seatrepo.NewSeatRepository(cfg.DB)
-	uc := bookingusecase.NewBookingUsecase(cfg.Tx, bookRepo, seatRepo)
+	uc := bookingusecase.NewBookingUsecase(cfg.Location, cfg.Tx, bookRepo, seatRepo)
 	handler := bookinghandler.NewBookingHandler(uc)
 
 	cfg.Mux.HandleFunc("POST /bookings", handler.CreateBooking)
+	cfg.Mux.HandleFunc("GET /bookings/me", handler.GetBookingHistory)
 }

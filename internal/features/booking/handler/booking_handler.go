@@ -35,3 +35,12 @@ func (h *bookingHandler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 	}
 	helper.SuccessResponse(w, http.StatusOK, "event booked", nil)
 }
+
+func (h *bookingHandler) GetBookingHistory(w http.ResponseWriter, r *http.Request) {
+	data, err := h.uc.GetBookingHistory(r.Context())
+	if err != nil {
+		helper.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	helper.SuccessResponse(w, http.StatusOK, "", data)
+}

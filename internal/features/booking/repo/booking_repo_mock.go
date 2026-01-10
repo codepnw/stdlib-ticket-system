@@ -64,3 +64,18 @@ func (mr *MockBookingRepositoryMockRecorder) CreateBookingTx(ctx, tx, input inte
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBookingTx", reflect.TypeOf((*MockBookingRepository)(nil).CreateBookingTx), ctx, tx, input)
 }
+
+// GetHistory mocks base method.
+func (m *MockBookingRepository) GetHistory(ctx context.Context, userID int64) ([]booking.BookingHistoryResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHistory", ctx, userID)
+	ret0, _ := ret[0].([]booking.BookingHistoryResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHistory indicates an expected call of GetHistory.
+func (mr *MockBookingRepositoryMockRecorder) GetHistory(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockBookingRepository)(nil).GetHistory), ctx, userID)
+}

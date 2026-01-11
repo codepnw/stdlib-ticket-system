@@ -36,6 +36,20 @@ func (m *MockSeatRepository) EXPECT() *MockSeatRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CancelSeatsTx mocks base method.
+func (m *MockSeatRepository) CancelSeatsTx(ctx context.Context, tx *sql.Tx, bookingID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelSeatsTx", ctx, tx, bookingID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelSeatsTx indicates an expected call of CancelSeatsTx.
+func (mr *MockSeatRepositoryMockRecorder) CancelSeatsTx(ctx, tx, bookingID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelSeatsTx", reflect.TypeOf((*MockSeatRepository)(nil).CancelSeatsTx), ctx, tx, bookingID)
+}
+
 // CreateSeatBatchTx mocks base method.
 func (m *MockSeatRepository) CreateSeatBatchTx(ctx context.Context, tx *sql.Tx, seats []seat.Seat) error {
 	m.ctrl.T.Helper()

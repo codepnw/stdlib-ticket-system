@@ -18,6 +18,7 @@ import (
 type BookingUsecase interface {
 	CreateBooking(ctx context.Context, eventID int64, seatIDs []int64) error
 	GetBookingHistory(ctx context.Context) ([]displayBookingHistory, error)
+	CancelBooking(ctx context.Context, bookingID string) error
 }
 
 type bookingUsecase struct {
@@ -125,4 +126,43 @@ func (u *bookingUsecase) GetBookingHistory(ctx context.Context) ([]displayBookin
 		})
 	}
 	return result, nil
+}
+
+func (u *bookingUsecase) CancelBooking(ctx context.Context, bookingID string) error {
+	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
+	defer cancel()
+
+	// TODO: Get UserID From Context
+	userID := int64(1)
+
+	// 1. Check Booking ID
+	bookData, err := u.bookRepo.GetByID(ctx, bookingID)
+	if err != nil {
+		return err
+	}
+	// 2. Check Ownership (userID != booking.UserID)
+	if userID != bookData.UserID {
+		return errs.ErrCancelOtherBooking
+	}
+	// 3. Check Cancelled Status
+	if bookData.Status == booking.StatusCancelled {
+		return errs.ErrBookingIsCancel
+	}
+	// 4. Check Paid Status cannot cancel
+	if bookData.Status == booking.StatusPaid {
+		return errs.ErrBookingIsPaid
+	}
+
+	return u.tx.WithTx(ctx, func(tx *sql.Tx) error {
+		// 5. Cancel Booking
+		if err := u.bookRepo.CancelBookingTx(ctx, tx, bookData.ID); err != nil {
+			return err
+		}
+
+		// 6. Cancel Seats
+		if err := u.seatRepo.CancelSeatsTx(ctx, tx, bookData.ID); err != nil {
+			return err
+		}
+		return nil
+	})
 }

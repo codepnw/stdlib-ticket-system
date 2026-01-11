@@ -71,4 +71,5 @@ func (cfg ServerConfig) bookingRoutes() {
 
 	cfg.Mux.HandleFunc("POST /bookings", handler.CreateBooking)
 	cfg.Mux.HandleFunc("GET /bookings/me", handler.GetBookingHistory)
+	cfg.Mux.HandleFunc("POST /bookings/cancel", handler.CancelBooking)
 }

@@ -169,7 +169,7 @@ func TestGetBookingHistory(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name: "success",
+			name:   "success",
 			userID: 1,
 			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64) {
 				mockData := []booking.BookingHistoryResponse{
@@ -181,7 +181,7 @@ func TestGetBookingHistory(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "fail",
+			name:   "fail",
 			userID: 1,
 			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64) {
 				mockBook.EXPECT().GetHistory(gomock.Any(), userID).Return(nil, ErrMockDBError).Times(1)
@@ -209,10 +209,117 @@ func TestGetBookingHistory(t *testing.T) {
 	}
 }
 
+func TestCancelBooking(t *testing.T) {
+	type testCase struct {
+		name      string
+		userID    int64
+		bookingID string
+		mockFn    func(
+			tx database.TxManager,
+			mockBook bookingrepo.MockBookingRepository,
+			mockSeat seatrepo.MockSeatRepository,
+			userID int64,
+			bookingID string,
+		)
+		expectedErr error
+	}
+
+	testCases := []testCase{
+		{
+			name:      "success",
+			userID:    1,
+			bookingID: "mock-uuid-1",
+			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64, bookingID string) {
+				mockBookData := booking.Booking{ID: "mock-uuid-1", UserID: 1, Status: booking.StatusPending}
+				mockBook.EXPECT().GetByID(gomock.Any(), bookingID).Return(mockBookData, nil).Times(1)
+
+				mockBook.EXPECT().CancelBookingTx(gomock.Any(), gomock.Any(), mockBookData.ID).Return(nil).Times(1)
+
+				mockSeat.EXPECT().CancelSeatsTx(gomock.Any(), gomock.Any(), mockBookData.ID).Return(nil).Times(1)
+			},
+			expectedErr: nil,
+		},
+		{
+			name:      "fail user other booking",
+			userID:    2,
+			bookingID: "mock-uuid-1",
+			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64, bookingID string) {
+				mockBookData := booking.Booking{ID: "mock-uuid-1", UserID: 1, Status: booking.StatusCancelled}
+				mockBook.EXPECT().GetByID(gomock.Any(), bookingID).Return(mockBookData, nil).Times(1)
+			},
+			expectedErr: errs.ErrCancelOtherBooking,
+		},
+		{
+			name:      "fail cancel already",
+			userID:    1,
+			bookingID: "mock-uuid-1",
+			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64, bookingID string) {
+				mockBookData := booking.Booking{ID: "mock-uuid-1", UserID: 1, Status: booking.StatusCancelled}
+				mockBook.EXPECT().GetByID(gomock.Any(), bookingID).Return(mockBookData, nil).Times(1)
+			},
+			expectedErr: errs.ErrBookingIsCancel,
+		},
+		{
+			name:      "fail cancel paid status",
+			userID:    1,
+			bookingID: "mock-uuid-1",
+			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64, bookingID string) {
+				mockBookData := booking.Booking{ID: "mock-uuid-1", UserID: 1, Status: booking.StatusPaid}
+				mockBook.EXPECT().GetByID(gomock.Any(), bookingID).Return(mockBookData, nil).Times(1)
+			},
+			expectedErr: errs.ErrBookingIsPaid,
+		},
+		{
+			name:      "fail cancel booking",
+			userID:    1,
+			bookingID: "mock-uuid-1",
+			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64, bookingID string) {
+				mockBookData := booking.Booking{ID: "mock-uuid-1", UserID: 1, Status: booking.StatusPending}
+				mockBook.EXPECT().GetByID(gomock.Any(), bookingID).Return(mockBookData, nil).Times(1)
+
+				mockBook.EXPECT().CancelBookingTx(gomock.Any(), gomock.Any(), mockBookData.ID).Return(ErrMockDBError).Times(1)
+			},
+			expectedErr: ErrMockDBError,
+		},
+		{
+			name:      "fail cancel seats",
+			userID:    1,
+			bookingID: "mock-uuid-1",
+			mockFn: func(tx database.TxManager, mockBook bookingrepo.MockBookingRepository, mockSeat seatrepo.MockSeatRepository, userID int64, bookingID string) {
+				mockBookData := booking.Booking{ID: "mock-uuid-1", UserID: 1, Status: booking.StatusPending}
+				mockBook.EXPECT().GetByID(gomock.Any(), bookingID).Return(mockBookData, nil).Times(1)
+
+				mockBook.EXPECT().CancelBookingTx(gomock.Any(), gomock.Any(), mockBookData.ID).Return(nil).Times(1)
+				
+				mockSeat.EXPECT().CancelSeatsTx(gomock.Any(), gomock.Any(), mockBookData.ID).Return(ErrMockDBError).Times(1)
+			},
+			expectedErr: ErrMockDBError,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			uc, mockTx, mockBook, mockSeat := setup(t)
+
+			// Mock FN
+			tc.mockFn(mockTx, mockBook, mockSeat, tc.userID, tc.bookingID)
+
+			err := uc.CancelBooking(context.Background(), tc.bookingID)
+
+			if tc.expectedErr != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func setup(t *testing.T) (bookingusecase.BookingUsecase, mockTx, bookingrepo.MockBookingRepository, seatrepo.MockSeatRepository) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	loc, _ := time.LoadLocation("Asia/Bangkok")
 
 	mockTx := mockTx{}

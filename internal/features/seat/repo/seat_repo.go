@@ -19,6 +19,7 @@ type SeatRepository interface {
 	CreateSeatBatchTx(ctx context.Context, tx *sql.Tx, seats []seat.Seat) error
 	GetSeatsForUpdateTx(ctx context.Context, tx *sql.Tx, seatIDs []int64) ([]seat.Seat, error)
 	UpdateSeatsStatusTx(ctx context.Context, tx *sql.Tx, seatIDs []int64, status string) error
+	CancelSeatsTx(ctx context.Context, tx *sql.Tx, bookingID string) error
 }
 
 type seatRepository struct {
@@ -128,6 +129,30 @@ func (r *seatRepository) UpdateSeatsStatusTx(ctx context.Context, tx *sql.Tx, se
 
 	if rows == 0 {
 		return errs.ErrSeatNotFound
+	}
+	return nil
+}
+
+func (r *seatRepository) CancelSeatsTx(ctx context.Context, tx *sql.Tx, bookingID string) error {
+	query := `
+		UPDATE seats SET status = 'AVAILABLE'
+		WHERE id IN (
+			SELECT seat_id FROM booking_items 
+			WHERE booking_id = $1
+		)
+	`
+	res, err := tx.ExecContext(ctx, query, bookingID)
+	if err != nil {
+		return err
+	}
+	
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	
+	if rows == 0 {
+		return errs.ErrBookingNotFound
 	}
 	return nil
 }

@@ -36,6 +36,20 @@ func (m *MockBookingRepository) EXPECT() *MockBookingRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CancelBookingTx mocks base method.
+func (m *MockBookingRepository) CancelBookingTx(ctx context.Context, tx *sql.Tx, bookingID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelBookingTx", ctx, tx, bookingID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelBookingTx indicates an expected call of CancelBookingTx.
+func (mr *MockBookingRepositoryMockRecorder) CancelBookingTx(ctx, tx, bookingID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelBookingTx", reflect.TypeOf((*MockBookingRepository)(nil).CancelBookingTx), ctx, tx, bookingID)
+}
+
 // CreateBookingItemsTx mocks base method.
 func (m *MockBookingRepository) CreateBookingItemsTx(ctx context.Context, tx *sql.Tx, bookingID string, seatIDs []int64) error {
 	m.ctrl.T.Helper()
@@ -63,6 +77,21 @@ func (m *MockBookingRepository) CreateBookingTx(ctx context.Context, tx *sql.Tx,
 func (mr *MockBookingRepositoryMockRecorder) CreateBookingTx(ctx, tx, input interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBookingTx", reflect.TypeOf((*MockBookingRepository)(nil).CreateBookingTx), ctx, tx, input)
+}
+
+// GetByID mocks base method.
+func (m *MockBookingRepository) GetByID(ctx context.Context, bookingID string) (booking.Booking, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, bookingID)
+	ret0, _ := ret[0].(booking.Booking)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockBookingRepositoryMockRecorder) GetByID(ctx, bookingID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockBookingRepository)(nil).GetByID), ctx, bookingID)
 }
 
 // GetHistory mocks base method.

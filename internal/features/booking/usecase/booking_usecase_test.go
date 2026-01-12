@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codepnw/stdlib-ticket-system/internal/authcontext"
 	"github.com/codepnw/stdlib-ticket-system/internal/errs"
 	"github.com/codepnw/stdlib-ticket-system/internal/features/booking"
 	bookingrepo "github.com/codepnw/stdlib-ticket-system/internal/features/booking/repo"
@@ -143,7 +144,8 @@ func TestCreateBooking(t *testing.T) {
 			tc.mockFn(mockTx, mockBook, mockSeat, tc.eventID, tc.seatIDs)
 
 			// Create Booking
-			err := uc.CreateBooking(context.Background(), tc.eventID, tc.seatIDs)
+			ctx := authcontext.SetUserID(context.Background(), int64(1))
+			err := uc.CreateBooking(ctx, tc.eventID, tc.seatIDs)
 
 			if tc.expectedErr != nil {
 				assert.Error(t, err)
@@ -197,8 +199,9 @@ func TestGetBookingHistory(t *testing.T) {
 
 			// Mock FN
 			tc.mockFn(mockTx, mockBook, mockSeat, tc.userID)
-
-			_, err := uc.GetBookingHistory(context.Background())
+			
+			ctx := authcontext.SetUserID(context.Background(), int64(1))
+			_, err := uc.GetBookingHistory(ctx)
 
 			if tc.expectedErr != nil {
 				assert.Error(t, err)
@@ -304,8 +307,9 @@ func TestCancelBooking(t *testing.T) {
 
 			// Mock FN
 			tc.mockFn(mockTx, mockBook, mockSeat, tc.userID, tc.bookingID)
-
-			err := uc.CancelBooking(context.Background(), tc.bookingID)
+			
+			ctx := authcontext.SetUserID(context.Background(), int64(1))
+			err := uc.CancelBooking(ctx, tc.bookingID)
 
 			if tc.expectedErr != nil {
 				assert.Error(t, err)

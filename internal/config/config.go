@@ -9,8 +9,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type contextKey string
+
 const (
-	ContextTimeout       = time.Second * 10
+	// Context Config
+	ContextTimeout                  = time.Second * 10
+	ContextUserClaimsKey contextKey = "user-claims-context"
+	ContextUserIDKey     contextKey = "user-id-context"
+	
+	// JWT Duration
 	AccessTokenDuration  = time.Hour * 1
 	RefreshTokenDuration = time.Hour * 24 * 7
 )

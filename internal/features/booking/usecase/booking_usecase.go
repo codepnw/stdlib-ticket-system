@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/codepnw/stdlib-ticket-system/internal/authcontext"
 	"github.com/codepnw/stdlib-ticket-system/internal/config"
 	"github.com/codepnw/stdlib-ticket-system/internal/errs"
 	"github.com/codepnw/stdlib-ticket-system/internal/features/booking"
@@ -40,6 +41,8 @@ func NewBookingUsecase(location *time.Location, tx database.TxManager, bookRepo 
 func (u *bookingUsecase) CreateBooking(ctx context.Context, eventID int64, seatIDs []int64) error {
 	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
 	defer cancel()
+	
+	userID := authcontext.GetUserID(ctx)
 
 	return u.tx.WithTx(ctx, func(tx *sql.Tx) error {
 		// Get Seats
@@ -69,7 +72,7 @@ func (u *bookingUsecase) CreateBooking(ctx context.Context, eventID int64, seatI
 
 		// Create Booking
 		bookingID, err := u.bookRepo.CreateBookingTx(ctx, tx, booking.Booking{
-			UserID:      1, // TODO: Get From Context Later
+			UserID:      userID,
 			EventID:     eventID,
 			TotalAmount: totalAmount,
 			Status:      booking.StatusPending,
@@ -102,8 +105,7 @@ func (u *bookingUsecase) GetBookingHistory(ctx context.Context) ([]displayBookin
 	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
 	defer cancel()
 
-	// TODO: Get UserID From Context Later
-	userID := int64(1)
+	userID := authcontext.GetUserID(ctx)
 
 	history, err := u.bookRepo.GetHistory(ctx, userID)
 	if err != nil {
@@ -132,8 +134,7 @@ func (u *bookingUsecase) CancelBooking(ctx context.Context, bookingID string) er
 	ctx, cancel := context.WithTimeout(ctx, config.ContextTimeout)
 	defer cancel()
 
-	// TODO: Get UserID From Context
-	userID := int64(1)
+	userID := authcontext.GetUserID(ctx)
 
 	// 1. Check Booking ID
 	bookData, err := u.bookRepo.GetByID(ctx, bookingID)

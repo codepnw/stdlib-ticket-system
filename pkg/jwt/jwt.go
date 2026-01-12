@@ -13,6 +13,8 @@ import (
 type JWTToken interface {
 	GenerateAccessToken(u user.User) (string, error)
 	GenerateRefreshToken(u user.User) (string, error)
+	VerifyAccessToken(tokenStr string) (*Payload, error)
+	VerifyRefreshToken(tokenStr string) (*Payload, error)
 }
 
 type jwtToken struct {
@@ -60,4 +62,43 @@ func (j *jwtToken) generateToken(key []byte, u user.User, duration time.Duration
 		return "", fmt.Errorf("sign token failed: %w", err)
 	}
 	return ss, nil
+}
+
+// ============= Verify Token =================
+
+func (j *jwtToken) VerifyAccessToken(tokenStr string) (*Payload, error) {
+	return j.verifyToken([]byte(j.secretKey), tokenStr)
+}
+
+func (j *jwtToken) VerifyRefreshToken(tokenStr string) (*Payload, error) {
+	return j.verifyToken([]byte(j.refreshKey), tokenStr)
+}
+
+type Payload struct {
+	UserID    int64     `json:"user_id"`
+	Username  string    `json:"username"`
+}
+
+func (j *jwtToken) verifyToken(key []byte, tokenStr string) (*Payload, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &UserClaims{}, func(t *jwt.Token) (any, error) {
+		return key, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*UserClaims)
+	if !ok {
+		return nil, err
+	}
+
+	if time.Now().After(claims.ExpiresAt.Time) {
+		return nil, errors.New("token expires")
+	}
+
+	payload := &Payload{
+		UserID:    claims.ID,
+		Username:  claims.Username,
+	}
+	return payload, nil
 }
